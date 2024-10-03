@@ -6,6 +6,18 @@ use GraphQL\Type\Schema;
 require_once __DIR__ . '/../vendor/autoload.php';
 $conn = require 'db.php';
 // Define the ProductType
+// --------------------------------------------------------------------------------------------------------+
+// | products | CREATE TABLE `products` (
+//   `id` varchar(255) NOT NULL,
+//   `name` varchar(255) DEFAULT NULL,
+//   `inStock` tinyint(1) DEFAULT NULL,
+//   `description` text,
+//   `category_id` varchar(255) DEFAULT NULL,
+//   `brand` varchar(255) DEFAULT NULL,
+//   `__typename` varchar(255) DEFAULT NULL,
+//   PRIMARY KEY (`id`)
+// ) ENGINE=InnoDB DEFAULT CHARSET=utf8 |
+// +----------+-----------
 $productType = new ObjectType([
     'name' => 'Product',
     'fields' => [
@@ -96,3 +108,5 @@ return new Schema([
     'query' => $queryType,
     'mutation' => $mutationType,
 ]);
+
+
