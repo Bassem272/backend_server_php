@@ -1,0 +1,21 @@
+{
+    "name": "bassem/backend_server",
+    "description": "php server using graphql and mysql",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Bassem\\BackendServer\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "bassem",
+            "email": "bassem.gehad95@yahoo.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "webonyx/graphql-php": "dev-master"
+    }
+}
