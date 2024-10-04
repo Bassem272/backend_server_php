@@ -1,5 +1,6 @@
 <?php
 
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Schema;
@@ -18,6 +19,14 @@ $conn = require 'db.php';
 //   PRIMARY KEY (`id`)
 // ) ENGINE=InnoDB DEFAULT CHARSET=utf8 |
 // +----------+-----------
+$galleryType = new ObjectType([
+    'name'=> 'Gallery',
+    'fields'=> [
+        'product_id'=> ['type' => Type::nonNull(Type::string())] ,
+        'image_url' => ['type' => Type::nonNull(Type::string())],
+    ],
+]);
+
 $priceType = new ObjectType([
     'name' => 'Price',
     'fields' => [
@@ -61,6 +70,29 @@ $productType = new ObjectType([
                 }
                 
                 return $prices;  // Return the list of prices
+            }
+        ],
+        'gallery' => [
+            'type' => Type::ListOf($galleryType),
+            'resolve' => function ($product, $args, $context) use ($conn)
+            {
+                $query = 'SELECT * FROM product_gallery WHERE product_id = ?';
+                $stmt = $conn -> prepare($query);
+                $stmt->bind_param('s', $product['id']);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                $gallery = [];
+               
+                    while ($row = $result->fetch_assoc()){
+                        $gallery[] = [
+                            'product_id'=> $row['product_id'],
+                            'image_url' => $row['image_url'],
+                        ];
+                    }
+                    
+                
+                return $gallery;
             }
         ]
     ],
@@ -121,7 +153,6 @@ $queryType = new ObjectType([
                     }
                     $result->free(); // Free the result set
                 }
-
                 return $products;
             },
         ],
@@ -130,10 +161,9 @@ $queryType = new ObjectType([
             'resolve' => function ($root , $args) use ($conn){
                 $result = $conn->query('SELECT * FROM categories');
                 $categories = [];
-
                 if ($result) {
                     while ($row = $result -> fetch_assoc()){
-                       $categories[] = [
+                    $categories[] = [
                             'id' => $row['id'],
                             'name'=> $row['name'],
                         ];
@@ -180,4 +210,4 @@ return new Schema([
     'mutation' => $mutationType,
 ]);
 
-
+    
