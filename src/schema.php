@@ -18,16 +18,64 @@ $conn = require 'db.php';
 //   PRIMARY KEY (`id`)
 // ) ENGINE=InnoDB DEFAULT CHARSET=utf8 |
 // +----------+-----------
+$priceType = new ObjectType([
+    'name' => 'Price',
+    'fields' => [
+        'product_id' => ['type' => Type::nonNull(Type::string())],  // Add product_id field
+        'amount' => ['type' => Type::float()],
+        'currency_label' => ['type' => Type::nonNull(Type::string())],
+        'currency_symbol' => ['type' => Type::string()],
+        '__typename' => ['type' => Type::string()],
+    ],
+]);
 $productType = new ObjectType([
     'name' => 'Product',
     'fields' => [
         'id' => ['type' => Type::nonNull(Type::string())],
         'name' => ['type' => Type::nonNull(Type::string())],
+        'inStock' => ['type' => Type::nonNull(Type::boolean())],
         // 'price' => ['type' => Type::float()],
         'description' => ['type' => Type::string()],
+        'category_id' => ['type'=> Type::string()],
+        'brand' => [ 'type'=> Type::string()],
+        '__typename' => ['type'=> Type::string()],
+        'price' => [
+            'type' => Type::listOf($priceType),  // List of prices for different currencies
+            'resolve' => function ($product, $args, $context) use ($conn) {
+                // Query prices table to fetch all prices for this product
+                $query = "SELECT * FROM prices WHERE product_id = ?";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("s", $product['id']);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                $prices = [];
+                while ($price = $result->fetch_assoc()) {
+                    $prices[] = [
+                        'product_id' => $price['product_id'],  // Include product_id in the result
+                        'amount' => $price['amount'],
+                        'currency_label' => $price['currency_label'],
+                        'currency_symbol' => $price['currency_symbol'],
+                        '__typename' => $price['__typename'],
+                    ];
+                }
+                
+                return $prices;  // Return the list of prices
+            }
+        ]
     ],
 ]);
 
+$categoryType = new ObjectType([
+    'name'=> 'categories',
+    'fields' => [
+        'id'=> ['type'=> Type::nonNull(Type::string())],
+        'name'=> ['type'=> Type::nonNull(Type::string())],
+    ]
+    ]);
+
+
+    
 // Define the Query type with the updated products field
 $queryType = new ObjectType([
     'name' => 'Query',
@@ -55,7 +103,7 @@ $queryType = new ObjectType([
             'type' => Type::listOf($productType), // Use the custom ProductType here
             'resolve' => function () use ($conn) {
                 // Fetch products from the database
-                $result = $conn->query('SELECT id, name, description FROM products');
+                $result = $conn->query('SELECT id, name, description, brand FROM products');
                 $products = [];
 
                 if ($result) {
@@ -64,7 +112,11 @@ $queryType = new ObjectType([
                             'id' => $row['id'],
                             'name' => $row['name'],
                             // 'price' => $row['price'],
+                            'inStock' =>  (bool) $row['inStock'],
                             'description' => $row['description'],
+                            'category_id' => $row['category_id'],
+                            'brand' => $row['brand'],
+                            '__typename' => $row['__typename'],
                         ];
                     }
                     $result->free(); // Free the result set
@@ -72,6 +124,25 @@ $queryType = new ObjectType([
 
                 return $products;
             },
+        ],
+        'categories'=> [
+            'type' => Type::listOf($categoryType),
+            'resolve' => function ($root , $args) use ($conn){
+                $result = $conn->query('SELECT * FROM categories');
+                $categories = [];
+
+                if ($result) {
+                    while ($row = $result -> fetch_assoc()){
+                       $categories[] = [
+                            'id' => $row['id'],
+                            'name'=> $row['name'],
+                        ];
+                    }
+                    $result->free();
+                }
+                return $categories;
+            }
+
         ],
         'multi' => [
             'type' => Type::listOf(Type::int()), // Assuming multi returns a list of integers

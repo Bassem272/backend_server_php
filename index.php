@@ -7,8 +7,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 require_once __DIR__ . '/vendor/autoload.php';
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
-echo "here we go; Hello Bassem is here and just started ok lol 
-Thanks and praise are to Allah the mighty who gave us his blessings. ";
+echo "here ";
 echo "</br>";
 
 require "./src/db.php";
