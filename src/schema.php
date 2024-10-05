@@ -19,6 +19,54 @@ $conn = require 'db.php';
 //   PRIMARY KEY (`id`)
 // ) ENGINE=InnoDB DEFAULT CHARSET=utf8 |
 // +----------+-----------
+
+$attributeItemType = new ObjectType([
+    'name' => 'AttributeItem',
+    'fields' => [
+        'id' => ['type' => Type::nonNull(Type::string())],
+        'attribute_id' => ['type' => Type::nonNull(Type::string())],
+        'product_id' => ['type' => Type::nonNull(Type::string())],
+        'displayValue' => ['type' => Type::string()],
+        'value' => ['type' => Type::string()],
+        '__typename' => ['type' => Type::string()],
+    ]
+]);
+
+$attributeType = new ObjectType([
+    'name' => 'Attribute',
+    'fields' => [
+        'id' => ['type' => Type::nonNull(Type::string())],
+        'product_id' => ['type' => Type::nonNull(Type::string())],
+        'name' => ['type' => Type::string()],
+        'type' => ['type' => Type::string()],
+        '__typename' => ['type' => Type::string()],
+        'attribute_items' => [
+            'type' => Type::listOf($attributeItemType),  // List of attribute items
+            'resolve' => function ($attribute, $args, $context) use ($conn) {
+                // Query the attribute_items table for the given attribute
+                $query = "SELECT * FROM attribute_items WHERE attribute_id = ? AND product_id = ?";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("ss", $attribute['id'], $attribute['product_id']);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                $attributeItems = [];
+                while ($item = $result->fetch_assoc()) {
+                    $attributeItems[] = [
+                        'id' => $item['id'],
+                        'attribute_id' => $item['attribute_id'],
+                        'product_id' => $item['product_id'],
+                        'displayValue' => $item['displayValue'],
+                        'value' => $item['value'],
+                        '__typename' => $item['__typename'],
+                    ];
+                }
+                return $attributeItems;
+            }
+        ]
+    ]
+]);
+
 $galleryType = new ObjectType([
     'name'=> 'Gallery',
     'fields'=> [
@@ -94,6 +142,23 @@ $productType = new ObjectType([
                 
                 return $gallery;
             }
+        ],
+        'attributes' => [
+            'type' => Type::listOf($attributeType),
+            'resolve' => function ($product, $args, $context) use ($conn) {
+                // Query the attributes table to get the attributes for this product
+                $query = "SELECT * FROM attributes WHERE product_id = ?";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("s", $product['id']);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                $attributes = [];
+                while ($attribute = $result->fetch_assoc()) {
+                    $attributes[] = $attribute;
+                }
+                return $attributes;
+            }
         ]
     ],
 ]);
@@ -155,6 +220,38 @@ $queryType = new ObjectType([
                 }
                 return $products;
             },
+        ], 'product' => [
+            'type' => $productType,  // Return type is a single product
+            'args' => [
+                'id' => ['type' => Type::string()],  // Optional id argument
+                'name' => ['type' => Type::string()] // Optional name argument
+            ],
+            'resolve' => function ($root, $args, $context) use ($conn) {
+                $query = "";
+                $params = [];
+                
+                if (!empty($args['id'])) {
+                    // Search by ID
+                    $query = "SELECT * FROM products WHERE id = ?";
+                    $params = [$args['id']];
+                } elseif (!empty($args['name'])) {
+                    // Search by name
+                    $query = "SELECT * FROM products WHERE name = ?";
+                    $params = [$args['name']];
+                } else {
+                    // If no id or name provided, return null
+                    return null;
+                }
+                
+                // Prepare the statement
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("s", ...$params);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $product = $result->fetch_assoc();
+                
+                return $product;
+            }
         ],
         'categories'=> [
             'type' => Type::listOf($categoryType),
