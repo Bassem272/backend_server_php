@@ -12,7 +12,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 } else {
     // Uncomment for debugging
-    echo "Connection is successful";
+    // echo "Connection is successful";
 }
 
 return $conn;

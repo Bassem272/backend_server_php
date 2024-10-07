@@ -7,13 +7,13 @@ header('Access-Control-Allow-Headers: Content-Type');
 require_once __DIR__ . '/vendor/autoload.php';
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
-echo "here ";
-echo "</br>";
+
+
 
 require "./src/db.php";
 $schema = require "./src/schema.php";
 
-echo "</br>";
+
 
 // var_dump($conn);
 

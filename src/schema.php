@@ -200,7 +200,7 @@ $queryType = new ObjectType([
             'type' => Type::listOf($productType), // Use the custom ProductType here
             'resolve' => function () use ($conn) {
                 // Fetch products from the database
-                $result = $conn->query('SELECT id, name, description, brand FROM products');
+                $result = $conn->query('SELECT * FROM products');
                 $products = [];
 
                 if ($result) {
