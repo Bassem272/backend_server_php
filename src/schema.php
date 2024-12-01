@@ -3,9 +3,11 @@
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Schema;
 require_once __DIR__ . '/../vendor/autoload.php';
 $conn = require 'db.php';
+
 // Define the ProductType
 // --------------------------------------------------------------------------------------------------------+
 // | products | CREATE TABLE `products` (
@@ -284,20 +286,113 @@ $queryType = new ObjectType([
         ],
     ],
 ]);
+$OrderItemInputType = new InputObjectType([
+    'name' => 'OrderItemInput',
+    'fields' => [
+        'productId' => ['type' => Type::nonNull(Type::string())],
+        'name' => ['type' => Type::nonNull(Type::string())],
+        'price' => ['type' => Type::nonNull(Type::float())],
+        'quantity' => ['type' => Type::nonNull(Type::int())],
+        'selectedAttributes' => ['type' => Type::string()],
+        'gallery' => ['type' => Type::listOf(Type::string())],
+        'categoryId' => ['type' => Type::nonNull(Type::string())],
+        'inStock' => ['type' => Type::nonNull(Type::boolean())]
+    ]
+]);
 
-// Define the Mutation type (kept as-is for now)
+$OrderType = new ObjectType([
+    'name' => 'Order',
+    'fields' => [
+        'orderId' => ['type' => Type::nonNull(Type::string())],
+        'status' => ['type' => Type::nonNull(Type::string())],
+        'orderTotal' => ['type' => Type::nonNull(Type::float())],
+        'orderTime' => ['type' => Type::nonNull(Type::string())], // Add orderTime
+
+    ]
+]);
+
+// Define the Mutation type (kept as-is for now)        // 'placeOrder' => [
+        //     'type' => Type::nonNull(Type::string()), 
+        //     'args' => [
+        //         'input' => Type::nonNull(Type::string()), 
+        //     ],
+        //     'resolve' => function ($root, $args) {
+        //         return 'Order placed with input: ' . $args['input'];
+        //     },
+        // ],
 $mutationType = new ObjectType([
     'name' => 'Mutation',
     'fields' =>  [ 
-        'placeOrder' => [
-            'type' => Type::nonNull(Type::string()), 
+
+        'createOrder' => [
+            'type' => $OrderType,
             'args' => [
-                'input' => Type::nonNull(Type::string()), 
+                'items' => ['type' => Type::listOf($OrderItemInputType)],
+                'userId' => ['type' => Type::nonNull(Type::string())]
             ],
-            'resolve' => function ($root, $args) {
-                return 'Order placed with input: ' . $args['input'];
-            },
-        ],
+            'resolve' => function($rootValue, $args) use($conn) {
+                // $conn connection
+               
+
+                if ($conn->connect_error) {
+                    return [
+                        'orderId' => null,
+                        'status' => 'error',
+                        'orderTotal' => 0,
+                        'message' => $conn->connect_error
+                    ];
+                }
+
+                // Calculate total amount
+                $totalAmount = 0;
+                foreach ($args['items'] as $item) {
+                    $totalAmount += $item['price'] * $item['quantity'];
+                }
+
+                $orderId = uniqid(); // Generate unique order ID
+                $status = 'pending';
+
+                // Insert order into the database
+                $stmt = $conn->prepare("INSERT INTO orders (orderId, userId, status, totalAmount) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("sssd", $orderId, $args['userId'], $status, $totalAmount);
+                $stmt->execute();
+
+                if ($stmt->affected_rows > 0) {
+                    // Insert each item into the order_items table
+                    foreach ($args['items'] as $item) {
+                        $stmt = $conn->prepare(
+                            "INSERT INTO order_items (orderId, productId, name, price, quantity, selectedAttributes, categoryId, inStock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                        );
+                        $stmt->bind_param(
+                            "sssdisis",
+                            $orderId,
+                            $item['productId'],
+                            $item['name'],
+                            $item['price'],
+                            $item['quantity'],
+                            $item['selectedAttributes'],
+                            $item['categoryId'],
+                            $item['inStock']
+                        );
+                        $stmt->execute();
+                    }
+
+                    $orderTime = date("h:i:s A"); // Current time in desired format
+                    return [
+                        'orderId' => $orderId,
+                        'status' => $status,
+                        'orderTotal' => $totalAmount,
+                        'orderTime' => $orderTime, // Include orderTime
+                    ];
+                } else {
+                    return [
+                        'orderId' => null,
+                        'status' => 'error',
+                        'orderTotal' => 0,
+                    ];
+                }
+            }
+        ]
     ],
 ]);
 
