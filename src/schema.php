@@ -5,6 +5,7 @@ use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Schema;
+
 require_once __DIR__ . '/../vendor/autoload.php';
 $conn = require 'db.php';
 
@@ -51,7 +52,7 @@ $attributeType = new ObjectType([
                 $stmt->bind_param("ss", $attribute['id'], $attribute['product_id']);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 $attributeItems = [];
                 while ($item = $result->fetch_assoc()) {
                     $attributeItems[] = [
@@ -70,9 +71,9 @@ $attributeType = new ObjectType([
 ]);
 
 $galleryType = new ObjectType([
-    'name'=> 'Gallery',
-    'fields'=> [
-        'product_id'=> ['type' => Type::nonNull(Type::string())] ,
+    'name' => 'Gallery',
+    'fields' => [
+        'product_id' => ['type' => Type::nonNull(Type::string())],
         'image_url' => ['type' => Type::nonNull(Type::string())],
     ],
 ]);
@@ -95,9 +96,9 @@ $productType = new ObjectType([
         'inStock' => ['type' => Type::nonNull(Type::boolean())],
         // 'price' => ['type' => Type::float()],
         'description' => ['type' => Type::string()],
-        'category_id' => ['type'=> Type::string()],
-        'brand' => [ 'type'=> Type::string()],
-        '__typename' => ['type'=> Type::string()],
+        'category_id' => ['type' => Type::string()],
+        'brand' => ['type' => Type::string()],
+        '__typename' => ['type' => Type::string()],
         'price' => [
             'type' => Type::listOf($priceType),  // List of prices for different currencies
             'resolve' => function ($product, $args, $context) use ($conn) {
@@ -107,7 +108,7 @@ $productType = new ObjectType([
                 $stmt->bind_param("s", $product['id']);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 $prices = [];
                 while ($price = $result->fetch_assoc()) {
                     $prices[] = [
@@ -118,30 +119,29 @@ $productType = new ObjectType([
                         '__typename' => $price['__typename'],
                     ];
                 }
-                
+
                 return $prices;  // Return the list of prices
             }
         ],
         'gallery' => [
             'type' => Type::ListOf($galleryType),
-            'resolve' => function ($product, $args, $context) use ($conn)
-            {
+            'resolve' => function ($product, $args, $context) use ($conn) {
                 $query = 'SELECT * FROM product_gallery WHERE product_id = ?';
-                $stmt = $conn -> prepare($query);
+                $stmt = $conn->prepare($query);
                 $stmt->bind_param('s', $product['id']);
                 $stmt->execute();
                 $result = $stmt->get_result();
 
                 $gallery = [];
-               
-                    while ($row = $result->fetch_assoc()){
-                        $gallery[] = [
-                            'product_id'=> $row['product_id'],
-                            'image_url' => $row['image_url'],
-                        ];
-                    }
-                    
-                
+
+                while ($row = $result->fetch_assoc()) {
+                    $gallery[] = [
+                        'product_id' => $row['product_id'],
+                        'image_url' => $row['image_url'],
+                    ];
+                }
+
+
                 return $gallery;
             }
         ],
@@ -154,7 +154,7 @@ $productType = new ObjectType([
                 $stmt->bind_param("s", $product['id']);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 $attributes = [];
                 while ($attribute = $result->fetch_assoc()) {
                     $attributes[] = $attribute;
@@ -166,15 +166,15 @@ $productType = new ObjectType([
 ]);
 
 $categoryType = new ObjectType([
-    'name'=> 'categories',
+    'name' => 'categories',
     'fields' => [
-        'id'=> ['type'=> Type::nonNull(Type::string())],
-        'name'=> ['type'=> Type::nonNull(Type::string())],
+        'id' => ['type' => Type::nonNull(Type::string())],
+        'name' => ['type' => Type::nonNull(Type::string())],
     ]
-    ]);
+]);
 
 
-    
+
 // Define the Query type with the updated products field
 $queryType = new ObjectType([
     'name' => 'Query',
@@ -222,7 +222,8 @@ $queryType = new ObjectType([
                 }
                 return $products;
             },
-        ], 'product' => [
+        ],
+        'product' => [
             'type' => $productType,  // Return type is a single product
             'args' => [
                 'id' => ['type' => Type::string()],  // Optional id argument
@@ -231,7 +232,7 @@ $queryType = new ObjectType([
             'resolve' => function ($root, $args, $context) use ($conn) {
                 $query = "";
                 $params = [];
-                
+
                 if (!empty($args['id'])) {
                     // Search by ID
                     $query = "SELECT * FROM products WHERE id = ?";
@@ -244,27 +245,27 @@ $queryType = new ObjectType([
                     // If no id or name provided, return null
                     return null;
                 }
-                
+
                 // Prepare the statement
                 $stmt = $conn->prepare($query);
                 $stmt->bind_param("s", ...$params);
                 $stmt->execute();
                 $result = $stmt->get_result();
                 $product = $result->fetch_assoc();
-                
+
                 return $product;
             }
         ],
-        'categories'=> [
+        'categories' => [
             'type' => Type::listOf($categoryType),
-            'resolve' => function ($root , $args) use ($conn){
+            'resolve' => function ($root, $args) use ($conn) {
                 $result = $conn->query('SELECT * FROM categories');
                 $categories = [];
                 if ($result) {
-                    while ($row = $result -> fetch_assoc()){
-                    $categories[] = [
+                    while ($row = $result->fetch_assoc()) {
+                        $categories[] = [
                             'id' => $row['id'],
-                            'name'=> $row['name'],
+                            'name' => $row['name'],
                         ];
                     }
                     $result->free();
@@ -312,17 +313,17 @@ $OrderType = new ObjectType([
 ]);
 
 // Define the Mutation type (kept as-is for now)        // 'placeOrder' => [
-        //     'type' => Type::nonNull(Type::string()), 
-        //     'args' => [
-        //         'input' => Type::nonNull(Type::string()), 
-        //     ],
-        //     'resolve' => function ($root, $args) {
-        //         return 'Order placed with input: ' . $args['input'];
-        //     },
-        // ],
+//     'type' => Type::nonNull(Type::string()), 
+//     'args' => [
+//         'input' => Type::nonNull(Type::string()), 
+//     ],
+//     'resolve' => function ($root, $args) {
+//         return 'Order placed with input: ' . $args['input'];
+//     },
+// ],
 $mutationType = new ObjectType([
     'name' => 'Mutation',
-    'fields' =>  [ 
+    'fields' =>  [
 
         'createOrder' => [
             'type' => $OrderType,
@@ -330,9 +331,9 @@ $mutationType = new ObjectType([
                 'items' => ['type' => Type::listOf($OrderItemInputType)],
                 'userId' => ['type' => Type::nonNull(Type::string())]
             ],
-            'resolve' => function($rootValue, $args) use($conn) {
+            'resolve' => function ($rootValue, $args) use ($conn) {
                 // $conn connection
-               
+
 
                 if ($conn->connect_error) {
                     return [
@@ -401,5 +402,3 @@ return new Schema([
     'query' => $queryType,
     'mutation' => $mutationType,
 ]);
-
-    
