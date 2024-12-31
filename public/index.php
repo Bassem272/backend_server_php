@@ -1,35 +1,34 @@
 <?php
 
-require '../vendor/autoload.php'; // Autoload dependencies
+require '../vendor/autoload.php'; // Load dependencies
 
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 
-// Enable CORS headers
+// Set CORS headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    // Handle preflight requests for CORS
-    exit(0);
+    exit(0); // Handle CORS preflight requests
 }
 
-// Create the schema
-$schema = require '../src/schema.php'; // Ensure this file returns a valid schema
+// Load the GraphQL schema
+$schema = require '../src/schema.php'; // Schema definition
 
-// Handle the request
+// Parse input payload
 $input = json_decode(file_get_contents('php://input'), true);
-error_log(print_r($input, true)); // Debug input
+error_log(print_r($input, true)); // Log input for debugging
 $query = $input['query'] ?? '';
-$variables = $input['variables'] ?? null; // Handle query variables if needed
+$variables = $input['variables'] ?? null; // Extract variables
 
 try {
-    // Execute the query
+    // Execute GraphQL query
     $result = GraphQL::executeQuery($schema, $query, null, null, $variables);
     $output = $result->toArray();
 } catch (Exception $e) {
-    // Catch and return errors in case of query execution issues
+    // Handle execution errors
     $output = [
         'errors' => [
             ['message' => $e->getMessage()],
@@ -37,6 +36,6 @@ try {
     ];
 }
 
-// Return the response as JSON
+// Send JSON response
 header('Content-Type: application/json');
 echo json_encode($output);
