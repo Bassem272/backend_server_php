@@ -1,17 +1,4 @@
-<?php 
-
-// use GraphQL\Type\Definition\Type;
-// use GraphQL\Type\Definition\ObjectType;
-
-// $galleryType = new ObjectType([
-//     'name' => 'Gallery',
-//     'fields' => [
-//         'product_id' => ['type' => Type::nonNull(Type::string())],
-//         'image_url' => ['type' => Type::nonNull(Type::string())],
-//     ],
-// ]);
-// return $galleryType;
-
+<?php
 
 namespace App\GraphQL\Types;
 
@@ -25,8 +12,12 @@ class GalleryType extends ObjectType
         parent::__construct([
             'name' => 'Gallery',
             'fields' => [
-                'product_id' => ['type' => Type::nonNull(Type::string())],
-                'image_url' => ['type' => Type::nonNull(Type::string())],
+                'product_id' => [
+                    'type' => Type::nonNull(Type::string()),
+                ],
+                'image_url' => [
+                    'type' => Type::nonNull(Type::string()),
+                ],
             ],
         ]);
     }

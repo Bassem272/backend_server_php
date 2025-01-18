@@ -1,129 +1,5 @@
 <?php
 
-
-// use GraphQL\Type\Definition\Type;
-// use App\GraphQL\Types\CategoryType;
-// $conn = require __DIR__.'/../../db.php';
-
-
-// $categoriesQuery = [
-//     'categories' => [
-//         'type' => Type::listOf($categoryType),
-//         'resolve' => function ($root, $args, $context) use ($conn) {
-//             $result = $conn->query('SELECT * FROM categories');
-//             $categories = [];
-
-//             if ($result) {
-//                 while ($row = $result->fetch_assoc()) {
-//                     $categories[] = [
-//                         'id' => $row['id'],
-//                         'name' => $row['name'],
-//                     ];
-//                 }
-//                 $result->free();
-//             }
-
-//             return $categories;
-//         },
-//     ],
-// ];
-
-// return $categoriesQuery;
-
-
-// namespace App\GraphQL\Queries;
-
-// use GraphQL\Type\Definition\Type;
-// use App\GraphQL\Types\CategoryType;
-// use App\Database\Connection;
-
-// class CategoriesQuery
-// {
-//     private $conn;
-
-//     public function __construct($conn)
-//     {
-//         $this->conn = $conn;
-//     }
-
-//     public function getCategoriesQuery()
-//     {
-//         return [
-//             'categories' => [
-//                 'type' => Type::listOf(CategoryType::getType()),
-//                 'resolve' => function ($root, $args, $context) {
-//                     $result = $this->conn->query('SELECT * FROM categories');
-//                     $categories = [];
-
-//                     if ($result) {
-//                         while ($row = $result->fetch_assoc()) {
-//                             $categories[] = [
-//                                 'id' => $row['id'],
-//                                 'name' => $row['name'],
-//                             ];
-//                         }
-//                         $result->free();
-//                     }
-
-//                     return $categories;
-//                 },
-//             ],
-//         ];
-//     }
-// }
-
-// namespace App\GraphQL\Queries;
-
-// use GraphQL\Type\Definition\Type;
-// use App\GraphQL\Types\CategoryType;
-// use App\Database\Connection;
-
-// class CategoriesQuery
-// {
-//     private $conn;
-//     private $categoryType;
-
-//     // Constructor to instantiate connection and categoryType
-//     public function __construct($conn)
-//     {
-//         $this->conn = $conn;
-//         $this->categoryType = new CategoryType(); // Instantiate CategoryType
-//     }
-
-//     // Method to get the categories query
-//     public function getCategoriesQuery()
-//     {
-//         return [
-//             'categories' => [
-//                 'type' => Type::listOf($this->categoryType), // Use instantiated categoryType here
-//                 'resolve' => function ($root, $args, $context) {
-//                     return $this->resolveCategoriesQuery();
-//                 },
-//             ],
-//         ];
-//     }
-
-//     // Resolving the query for categories from the database
-//     private function resolveCategoriesQuery()
-//     {
-//         // Run the query
-//         $result = $this->conn->query('SELECT * FROM categories');
-//         $categories = [];
-
-//         if ($result) {
-//             while ($row = $result->fetch_assoc()) {
-//                 $categories[] = [
-//                     'id' => $row['id'],
-//                     'name' => $row['name'],
-//                 ];
-//             }
-//             $result->free();
-//         }
-
-//         return $categories;
-//     }
-// }
-
 namespace App\GraphQL\Queries;
 
 use GraphQL\Type\Definition\Type;
@@ -140,6 +16,11 @@ class CategoriesQuery
         $this->categoryType = $categoryType;
     }
 
+    /**
+     * Convert the query to GraphQL query format.
+     *
+     * @return array
+     */
     public function toGraphQL()
     {
         return [
@@ -152,21 +33,44 @@ class CategoriesQuery
         ];
     }
 
+    /**
+     * Resolves the query to fetch categories from the database.
+     *
+     * @return array
+     */
     private function resolveCategoriesQuery()
     {
-        $result = $this->conn->query('SELECT * FROM categories');
-        $categories = [];
+        try {
+            $result = $this->conn->query('SELECT * FROM categories');
+            $categories = [];
 
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $categories[] = [
-                    'id' => $row['id'],
-                    'name' => $row['name'],
-                ];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $categories[] = $this->mapCategoryData($row);
+                }
+                $result->free();
             }
-            $result->free();
-        }
 
-        return $categories;
+            return $categories;
+        } catch (\Exception $e) {
+            // Log exception and/or handle it as needed
+            return [
+                'error' => 'Failed to fetch categories: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Maps category data from the database to the expected output structure.
+     *
+     * @param array $row
+     * @return array
+     */
+    private function mapCategoryData($row)
+    {
+        return [
+            'id' => $row['id'],
+            'name' => $row['name'],
+        ];
     }
 }

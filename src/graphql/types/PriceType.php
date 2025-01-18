@@ -1,21 +1,4 @@
-<?php 
-
-// use GraphQL\Type\Definition\Type;
-// use GraphQL\Type\Definition\ObjectType;
-
-// $priceType = new ObjectType([
-//     'name' => 'Price',
-//     'fields' => [
-//         'product_id' => ['type' => Type::nonNull(Type::string())],  // Add product_id field
-//         'amount' => ['type' => Type::float()],
-//         'currency_label' => ['type' => Type::nonNull(Type::string())],
-//         'currency_symbol' => ['type' => Type::string()],
-//         '__typename' => ['type' => Type::string()],
-//     ],
-// ]);
-
-// return $priceType;
-
+<?php
 
 namespace App\GraphQL\Types;
 
@@ -29,11 +12,21 @@ class PriceType extends ObjectType
         parent::__construct([
             'name' => 'Price',
             'fields' => [
-                'product_id' => ['type' => Type::nonNull(Type::string())],  // Add product_id field
-                'amount' => ['type' => Type::float()],
-                'currency_label' => ['type' => Type::nonNull(Type::string())],
-                'currency_symbol' => ['type' => Type::string()],
-                '__typename' => ['type' => Type::string()],
+                'product_id' => [
+                    'type' => Type::nonNull(Type::string()), // Add product_id field (non-nullable)
+                ],
+                'amount' => [
+                    'type' => Type::float(), // Amount field (nullable)
+                ],
+                'currency_label' => [
+                    'type' => Type::nonNull(Type::string()), // Currency label field (non-nullable)
+                ],
+                'currency_symbol' => [
+                    'type' => Type::string(), // Currency symbol field (nullable)
+                ],
+                '__typename' => [
+                    'type' => Type::string(), // The typename field (nullable)
+                ],
             ],
         ]);
     }
