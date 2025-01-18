@@ -11,9 +11,9 @@ class ComposerStaticInit0a997d909357c7c4d0021120139b3502
         array (
             'GraphQL\\' => 8,
         ),
-        'B' => 
+        'A' => 
         array (
-            'Bassem\\BackendServer\\' => 21,
+            'App\\' => 4,
         ),
     );
 
@@ -22,7 +22,7 @@ class ComposerStaticInit0a997d909357c7c4d0021120139b3502
         array (
             0 => __DIR__ . '/..' . '/webonyx/graphql-php/src',
         ),
-        'Bassem\\BackendServer\\' => 
+        'App\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),

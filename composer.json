@@ -5,7 +5,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Bassem\\BackendServer\\": "src/"
+            "App\\": "src/"
         }
     },
     "authors": [
